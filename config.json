@@ -1,0 +1,72 @@
+{
+    "raw_to_frames": {
+        "input_raw": "./data/raw_data/events_cut.raw",
+        "out_dir": "./data/processed_data/ev_60fps_contrast_32_count_gray_png",
+        "fps": 60.0,
+        "accum_us": 0,
+        "period_us": 0,
+        "delta_t_us": 1000,
+        "max_frames": 0,
+        "start_us": 0,
+        "duration_us": 0,
+        "polarity": "both",
+        "render_mode": "count_gray",
+        "metavision_gray": false,
+        "to": "png",
+        "bit_depth": 8,
+        "contrast": 32.0
+    },
+    "video_processing": {
+        "video_path": "./data/raw_data/frames_warped_to_events.avi",
+        "raw_path": "./data/raw_data/events_cut.raw",
+        "output_path": "./data/output_data/high_speed_output.avi",
+        "output_fps": 60,
+        "blend_alpha": 0.5,
+        "grayscale": false
+    },
+    "video_to_frames": {
+        "input_video": "./data/raw_data/frames_warped_to_events.avi",
+        "out_dir": "./data/processed_data/video_frames",
+        "format": "png",
+        "grayscale": false,
+        "max_frames": 0,
+        "start_frame": 0
+    },
+    "model": {
+        "num_bins": 5,
+        "image_channels": 1,
+        "base_channels": 32,
+        "unet_depth": 4,
+        "learning_rate": 0.0001,
+        "batch_size": 4,
+        "num_epochs": 100,
+        "loss": "l1",
+        "checkpoint_dir": "./models/checkpoints",
+        "resume_checkpoint": ""
+    },
+    "raw_to_edge_frames": {
+        "input_raw": "./data/raw_data/events_cut.raw",
+        "out_dir": "./data/processed_data/edge_frames",
+        "fps": 30.0,
+        "accum_us": 0,
+        "period_us": 0,
+        "delta_t_us": 1000,
+        "max_frames": 0,
+        "start_us": 0,
+        "duration_us": 0,
+        "hot_pixel_freq": 1000.0,
+        "refractory_us": 1000.0,
+        "nn_delta_t_us": 5000.0,
+        "polarity_consistency": false,
+        "polarity_delta_t_us": 5000.0,
+        "polarity_min_agreement": 0.6,
+        "edge_kernel_size": 5,
+        "grad_threshold": 10.0,
+        "contrast_threshold": 0.15,
+        "grad_min": 5.0,
+        "to": "png",
+        "speed_max_clip": 0,
+        "arrow_step": 16,
+        "arrow_scale": 5.0
+    }
+}
