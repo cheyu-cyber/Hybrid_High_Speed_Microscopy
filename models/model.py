@@ -10,14 +10,12 @@ All hyperparameters are read from config.json section "model".
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 from utils.config import load_config
 from datasets.event_processing import events_to_voxel_grid
 

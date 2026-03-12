@@ -7,7 +7,6 @@ Tests are split into:
 - Event / Metavision functions — skipped if metavision_core is not installed
 """
 
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,12 +14,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-# Ensure project packages are importable
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "datasets"))
-sys.path.insert(0, str(PROJECT_ROOT / "utils"))
 
-from video_processing import (
+from datasets.video_processing import (
     accumulate_events,
     get_video_frame,
     get_video_metadata,
@@ -247,7 +243,7 @@ except ImportError:
 class TestIterEventFrames(unittest.TestCase):
 
     def test_import_works(self):
-        from video_processing import iter_event_frames  # noqa: F401
+        from datasets.video_processing import iter_event_frames  # noqa: F401
         self.assertTrue(callable(iter_event_frames))
 
 

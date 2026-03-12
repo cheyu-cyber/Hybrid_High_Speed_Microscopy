@@ -15,7 +15,7 @@ from pathlib import Path
 
 import cv2
 
-from config import load_config
+from utils.config import load_config
 
 
 def main() -> int:

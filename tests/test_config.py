@@ -6,12 +6,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-import sys
-
-# Ensure utils is importable
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
-
-from config import load_config, CONFIG_PATH
+from utils.config import load_config, CONFIG_PATH
 
 
 class TestLoadConfigReal(unittest.TestCase):
@@ -73,19 +68,19 @@ class TestLoadConfigIsolated(unittest.TestCase):
     """Tests using a temporary config.json to avoid depending on real file content."""
 
     def setUp(self):
-        self._orig_path = __import__("config").CONFIG_PATH
+        self._orig_path = __import__("utils.config", fromlist=["config"]).CONFIG_PATH
         self._tmpdir = tempfile.TemporaryDirectory()
         self._tmp_config = Path(self._tmpdir.name) / "config.json"
 
     def tearDown(self):
         # Restore original CONFIG_PATH
-        import config as cfg_mod
+        import utils.config as cfg_mod
         cfg_mod.CONFIG_PATH = self._orig_path
         self._tmpdir.cleanup()
 
     def _write_and_patch(self, data: dict):
         self._tmp_config.write_text(json.dumps(data), encoding="utf-8")
-        import config as cfg_mod
+        import utils.config as cfg_mod
         cfg_mod.CONFIG_PATH = self._tmp_config
 
     def test_simple_section(self):

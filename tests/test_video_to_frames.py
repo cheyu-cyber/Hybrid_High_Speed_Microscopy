@@ -1,7 +1,6 @@
-"""Tests for utils/video_to_frames.py."""
+"""Tests for srcs/video_to_frames.py."""
 
 import csv
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,7 +9,6 @@ import cv2
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "utils"))
 
 
 class TestVideoToFrames(unittest.TestCase):
@@ -43,7 +41,7 @@ class TestVideoToFrames(unittest.TestCase):
     def _run_main(self, extra_cfg=None):
         """Run video_to_frames.main() with a patched config."""
         import json
-        import config as cfg_mod
+        import utils.config as cfg_mod
 
         out_dir = Path(tempfile.mkdtemp(dir=self._tmpdir.name))
         cfg_data = {
@@ -65,7 +63,7 @@ class TestVideoToFrames(unittest.TestCase):
         orig = cfg_mod.CONFIG_PATH
         cfg_mod.CONFIG_PATH = tmp_cfg
         try:
-            from video_to_frames import main
+            from srcs.video_to_frames import main
             ret = main()
         finally:
             cfg_mod.CONFIG_PATH = orig
@@ -120,7 +118,7 @@ class TestVideoToFrames(unittest.TestCase):
 
     def test_bad_input_returns_error(self):
         import json
-        import config as cfg_mod
+        import utils.config as cfg_mod
 
         cfg_data = {
             "video_to_frames": {
@@ -138,7 +136,7 @@ class TestVideoToFrames(unittest.TestCase):
         orig = cfg_mod.CONFIG_PATH
         cfg_mod.CONFIG_PATH = tmp_cfg
         try:
-            from video_to_frames import main
+            from srcs.video_to_frames import main
             ret = main()
         finally:
             cfg_mod.CONFIG_PATH = orig

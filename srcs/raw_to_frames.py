@@ -40,9 +40,7 @@ import csv
 import sys
 from pathlib import Path
 
-from config import load_config
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from utils.config import load_config
 from datasets.event_processing import window_image, bgr_to_gray_u8, save_event_image
 
 

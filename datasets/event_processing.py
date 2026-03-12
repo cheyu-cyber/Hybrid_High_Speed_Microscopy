@@ -6,6 +6,7 @@ Consolidated module for all event-related algorithms:
   - Event accumulation → image rendering (numpy)
   - Image format conversion and saving helpers
   - Edge detection with rising/falling polarity (numpy + cv2)
+  - Ridge/valley detection via Hessian eigenanalysis (numpy + cv2)
   - Event density / polarity maps (numpy)
   - Edge velocity estimation from image gradients + event polarity (numpy)
   - Biphasic polarity switch detection for edge traversal analysis (numpy)
@@ -15,7 +16,9 @@ Consolidated module for all event-related algorithms:
 from __future__ import annotations
 
 from pathlib import Path
+import cv2
 import numpy as np
+import torch
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +42,6 @@ def events_to_voxel_grid(events_t, events_x, events_y, events_p,
     -------
     voxel : (B, H, W) float tensor
     """
-    import torch
 
     voxel = torch.zeros(num_bins, height, width, dtype=torch.float32,
                         device=events_t.device)
@@ -168,8 +170,6 @@ def detect_edges(img, kernel_size=3, grad_threshold=0.0):
         rising     : (H, W) float32 — positive gradient magnitude (dark→bright)
         falling    : (H, W) float32 — negative gradient magnitude (bright→dark)
     """
-    import numpy as np
-    import cv2
 
     if img.ndim == 3:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -185,8 +185,6 @@ def detect_edges(img, kernel_size=3, grad_threshold=0.0):
 
     # Rising = component of gradient that is positive (dark→bright)
     # Falling = component that is negative (bright→dark)
-    # Combine both axes: take the positive / negative parts per axis,
-    # then compute magnitude of each.
     rising = np.sqrt(np.maximum(gx, 0) ** 2 + np.maximum(gy, 0) ** 2)
     falling = np.sqrt(np.maximum(-gx, 0) ** 2 + np.maximum(-gy, 0) ** 2)
 
@@ -203,6 +201,95 @@ def detect_edges(img, kernel_size=3, grad_threshold=0.0):
         "grad_y": gy,
         "rising": rising,
         "falling": falling,
+    }
+
+
+# ---------------------------------------------------------------------------
+# 4b. Ridge / valley detection  (numpy + cv2)
+# ---------------------------------------------------------------------------
+
+def detect_edges_ridge(img, kernel_size=3, grad_threshold=0.0):
+    """Compute spatial gradients and detect ridge / valley features.
+
+    Ridge  = bright line on darker background (0 → +1 → 0 cross-section).
+    Valley = dark line on brighter background (0 → −1 → 0 cross-section).
+
+    Uses first-order Sobel derivatives for gradient magnitude / direction
+    and second-order Hessian eigenanalysis for ridge / valley strength.
+
+    Parameters
+    ----------
+    img            : (H, W) or (H, W, 3) uint8 image (BGR or grayscale)
+    kernel_size    : Sobel kernel size (3, 5, 7 …); larger = wider response
+    grad_threshold : absolute first-order gradient threshold; pixels below
+                     are zeroed in ``magnitude`` (ridge / valley are not
+                     masked by this — they peak where gradient crosses zero)
+
+    Returns
+    -------
+    dict with keys:
+        magnitude  : (H, W) float32 — first-order gradient magnitude
+        direction  : (H, W) float32 — gradient angle in radians (atan2)
+        grad_x     : (H, W) float32 — horizontal gradient (Sobel dx)
+        grad_y     : (H, W) float32 — vertical gradient (Sobel dy)
+        ridge      : (H, W) float32 — bright-line strength  (0→+1→0)
+        valley     : (H, W) float32 — dark-line strength    (0→−1→0)
+        ridge_dir  : (H, W) float32 — ridge/valley axis direction (radians)
+    """
+
+    if img.ndim == 3:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img
+
+    gray_f = gray.astype(np.float32)
+
+    # First-order gradients
+    gx = cv2.Sobel(gray_f, cv2.CV_32F, 1, 0, ksize=kernel_size)
+    gy = cv2.Sobel(gray_f, cv2.CV_32F, 0, 1, ksize=kernel_size)
+
+    magnitude = np.sqrt(gx ** 2 + gy ** 2)
+    direction = np.arctan2(gy, gx)
+
+    if grad_threshold > 0:
+        magnitude[magnitude < grad_threshold] = 0
+
+    # Second-order derivatives (Hessian matrix)
+    ixx = cv2.Sobel(gray_f, cv2.CV_32F, 2, 0, ksize=kernel_size)
+    iyy = cv2.Sobel(gray_f, cv2.CV_32F, 0, 2, ksize=kernel_size)
+    ixy = cv2.Sobel(gray_f, cv2.CV_32F, 1, 1, ksize=kernel_size)
+
+    # Eigenvalues of the 2×2 Hessian
+    #   λ = (trace ± √((Ixx−Iyy)² + 4·Ixy²)) / 2
+    trace = ixx + iyy
+    disc = np.sqrt(np.maximum((ixx - iyy) ** 2 + 4 * ixy ** 2, 0))
+    lambda1 = (trace + disc) / 2          # algebraically larger
+    lambda2 = (trace - disc) / 2          # algebraically smaller
+
+    # Ridge (bright line, 0→+1→0): curvature across the line is negative
+    #   → λ2 << 0, so ridge strength = max(−λ2, 0)
+    ridge = np.maximum(-lambda2, 0)
+
+    # Valley (dark line, 0→−1→0): curvature across the line is positive
+    #   → λ1 >> 0, so valley strength = max(λ1, 0)
+    valley = np.maximum(lambda1, 0)
+
+    # Ridge/valley axis direction (direction along the feature).
+    # This is the angle of the eigenvector with the smallest absolute
+    # eigenvalue, which equals 0.5 * atan2(2·Ixy, Ixx − Iyy) + π/2
+    # for a ridge and 0.5 * atan2(2·Ixy, Ixx − Iyy) for a valley.
+    # We output the simpler "principal curvature direction" and let
+    # callers rotate as needed.
+    ridge_dir = 0.5 * np.arctan2(2 * ixy, ixx - iyy)
+
+    return {
+        "magnitude": magnitude,
+        "direction": direction,
+        "grad_x": gx,
+        "grad_y": gy,
+        "ridge": ridge,
+        "valley": valley,
+        "ridge_dir": ridge_dir,
     }
 
 
@@ -229,7 +316,7 @@ def compute_event_density(events_x, events_y, events_p, height, width):
         on_map       : (H, W) int32  — ON event count per pixel
         off_map      : (H, W) int32  — OFF event count per pixel
     """
-    import numpy as np
+
 
     x = np.asarray(events_x, dtype=np.int64)
     y = np.asarray(events_y, dtype=np.int64)
@@ -746,3 +833,63 @@ def filter_events(events_t, events_x, events_y, events_p,
         "hot_mask": hot_mask_out,
         "stages": stages,
     }
+
+
+# ---------------------------------------------------------------------------
+# 10. Visualisation helpers  (numpy + cv2)
+# ---------------------------------------------------------------------------
+
+def speed_heatmap(speed, speed_max_clip):
+    """Render speed as a JET-coloured uint8 BGR image."""
+    vmax = speed_max_clip if speed_max_clip > 0 else (speed.max() or 1.0)
+    gray_u8 = (np.clip(speed / vmax, 0, 1) * 255).astype(np.uint8)
+    heatmap = cv2.applyColorMap(gray_u8, cv2.COLORMAP_JET)
+    heatmap[speed == 0] = 0
+    return heatmap
+
+
+def angle_to_bgr(angle_rad):
+    """Map angles (radians) → BGR colours via HSV hue wheel.
+
+    0=red (right), π/2=green (down), π=cyan (left), 3π/2=magenta (up).
+    """
+    hue = ((np.degrees(angle_rad) % 360) / 2).astype(np.uint8)  # 0-179
+    hsv = np.stack([hue, np.full_like(hue, 255), np.full_like(hue, 255)],
+                   axis=-1).reshape(1, -1, 3)
+    return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR).reshape(-1, 3)
+
+
+def quiver_overlay(base_bgr, vx, vy, mask, arrow_step, arrow_scale):
+    """Draw direction-coded velocity arrows on a BGR image."""
+    canvas = base_bgr.copy()
+    h, w = vx.shape
+
+    # Collect patch-averaged arrows
+    arrows = []
+    for y0 in range(arrow_step // 2, h, arrow_step):
+        for x0 in range(arrow_step // 2, w, arrow_step):
+            y_lo, y_hi = max(y0 - arrow_step // 2, 0), min(y0 + arrow_step // 2, h)
+            x_lo, x_hi = max(x0 - arrow_step // 2, 0), min(x0 + arrow_step // 2, w)
+
+            patch_mask = mask[y_lo:y_hi, x_lo:x_hi]
+            if not patch_mask.any():
+                continue
+
+            dx = vx[y_lo:y_hi, x_lo:x_hi][patch_mask].mean()
+            dy = vy[y_lo:y_hi, x_lo:x_hi][patch_mask].mean()
+            if dx * dx + dy * dy < 1e-12:
+                continue
+            arrows.append((x0, y0, dx, dy))
+
+    if not arrows:
+        return canvas
+
+    arr = np.array(arrows, dtype=np.float64)
+    colours = angle_to_bgr(np.arctan2(arr[:, 3], arr[:, 2]))
+
+    for i, (x0, y0, dx, dy) in enumerate(arrows):
+        pt2 = (int(x0 + dx * arrow_scale), int(y0 + dy * arrow_scale))
+        c = tuple(int(v) for v in colours[i])
+        cv2.arrowedLine(canvas, (int(x0), int(y0)), pt2, c, 2, tipLength=0.25)
+
+    return canvas

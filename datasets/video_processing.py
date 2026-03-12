@@ -10,14 +10,11 @@ Provides functions to:
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
 
-# Allow importing config from the utils package
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 from utils.config import load_config
 
 
