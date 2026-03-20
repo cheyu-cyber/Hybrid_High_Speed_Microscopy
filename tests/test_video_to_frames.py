@@ -45,8 +45,8 @@ class TestVideoToFrames(unittest.TestCase):
 
         out_dir = Path(tempfile.mkdtemp(dir=self._tmpdir.name))
         cfg_data = {
-            "video_to_frames": {
-                "input_video": str(self._video_path),
+            "video_processing": {
+                "video_path": str(self._video_path),
                 "out_dir": str(out_dir),
                 "format": "png",
                 "grayscale": False,
@@ -55,7 +55,7 @@ class TestVideoToFrames(unittest.TestCase):
             }
         }
         if extra_cfg:
-            cfg_data["video_to_frames"].update(extra_cfg)
+            cfg_data["video_processing"].update(extra_cfg)
 
         tmp_cfg = Path(self._tmpdir.name) / "config.json"
         tmp_cfg.write_text(json.dumps(cfg_data), encoding="utf-8")
@@ -121,8 +121,8 @@ class TestVideoToFrames(unittest.TestCase):
         import utils.config as cfg_mod
 
         cfg_data = {
-            "video_to_frames": {
-                "input_video": "nonexistent.avi",
+            "video_processing": {
+                "video_path": "nonexistent.avi",
                 "out_dir": str(Path(self._tmpdir.name) / "bad"),
                 "format": "png",
                 "grayscale": False,

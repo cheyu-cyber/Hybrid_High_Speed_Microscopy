@@ -40,18 +40,18 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 def load_args():
     """Load and validate config.json section "raw_to_edge_frames"."""
-    args = load_config("raw_to_edge_frames")
+    args = load_config("raw_to_frames")
 
     if not args.input_raw:
         print("'input_raw' must be set in config.json", file=sys.stderr)
         sys.exit(2)
-    if not args.out_dir:
-        print("'out_dir' must be set in config.json", file=sys.stderr)
+    if not getattr(args, "edge_out_dir", ""):
+        print("'edge_out_dir' must be set in config.json", file=sys.stderr)
         sys.exit(2)
 
     # Resolve relative paths against project root
     args.input_raw = str((PROJECT_ROOT / args.input_raw).resolve())
-    args.out_dir = str((PROJECT_ROOT / args.out_dir).resolve())
+    args.out_dir = str((PROJECT_ROOT / args.edge_out_dir).resolve())
     return args
 
 

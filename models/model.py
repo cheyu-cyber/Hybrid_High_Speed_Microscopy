@@ -34,8 +34,7 @@ class EventVFIConfig:
         """Load an EventVFIConfig from a config.json section via utils/config.py.
 
         Example:
-            cfg = EventVFIConfig.from_config()                         # production
-            cfg = EventVFIConfig.from_config("event_vfi_model_smoke")  # small/fast
+            cfg = EventVFIConfig.from_config()  # loads "event_vfi_model" section
         """
         raw = load_config(section)
         return cls(
@@ -68,13 +67,10 @@ class EventVFIModel(nn.Module):
     Loss:  cycle_loss(pred_1_cyc, I1)  --  self-supervised, no GT needed.
 
     Typical construction:
-        # From config.json (production):
+        # From config.json:
         model = EventVFIModel.from_config()
 
-        # From config.json (smoke variant):
-        model = EventVFIModel.from_config("event_vfi_model_smoke")
-
-        # Programmatic (tests):
+        # Programmatic (tests, with smaller params for speed):
         model = EventVFIModel(EventVFIConfig(rgb_base_ch=8, ...))
 
     forward() input/output
@@ -171,12 +167,7 @@ class EventVFIModel(nn.Module):
 
     @classmethod
     def from_config(cls, section: str = "event_vfi_model") -> "EventVFIModel":
-        """Construct the model directly from a config.json section.
-
-        Example:
-            model = EventVFIModel.from_config()
-            model = EventVFIModel.from_config("event_vfi_model_smoke")
-        """
+        """Construct the model directly from a config.json section."""
         return cls(EventVFIConfig.from_config(section))
 
     @staticmethod

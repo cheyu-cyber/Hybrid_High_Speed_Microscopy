@@ -68,13 +68,14 @@ def _count_in_window(events: EventStream, start_us: float, window_us: float) -> 
 # Dataset
 # ---------------------------------------------------------------------------
 
-class CenteredWindowVFIDataset(Dataset):
-    """Frame triplets with tight event windows centered at each target time.
+class LeftAlignedWindowVFIDataset(Dataset):
+    """Frame triplets with left-aligned event windows anchored at each target time.
 
     Compared to SelfSupervisedEventVFIDataset (which uses all events in the
-    full inter-frame interval), this dataset uses only events within ±half_window
-    of the interpolation midpoint.  This isolates the motion signal at the
-    exact time of interest rather than integrating over the whole interval.
+    full inter-frame interval), this dataset uses only events in a fixed-width
+    window starting at the interpolation anchor time.  This isolates the motion
+    signal at the exact time of interest rather than integrating over the whole
+    interval.
 
     Parameters
     ----------
@@ -289,7 +290,7 @@ class CenteredWindowVFIDataset(Dataset):
 # Factory
 # ---------------------------------------------------------------------------
 
-def build_centered_window_dataset(
+def build_left_aligned_dataset(
     sequence_name: str,
     frame_dir: Path | str,
     frame_timestamps_csv: Path | str,
@@ -304,8 +305,8 @@ def build_centered_window_dataset(
     near_empty_threshold: int = 1,
     strict_validation: bool = True,
     rng_seed: int = 0,
-) -> CenteredWindowVFIDataset:
-    return CenteredWindowVFIDataset(
+) -> LeftAlignedWindowVFIDataset:
+    return LeftAlignedWindowVFIDataset(
         sequence_name=sequence_name,
         frame_dir=frame_dir,
         frame_timestamps_csv=frame_timestamps_csv,

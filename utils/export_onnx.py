@@ -2,7 +2,7 @@
 
 Usage:
     python utils/export_onnx.py
-    python utils/export_onnx.py --section event_vfi_model_smoke --out logs/model.onnx
+    python utils/export_onnx.py --section event_vfi_model --out logs/model.onnx
     python utils/export_onnx.py --h 128 --w 128
 
 Then open the .onnx file in:
@@ -42,7 +42,7 @@ class _ExportWrapper(torch.nn.Module):
 
 
 def export(
-    section: str = "event_vfi_model_smoke",
+    section: str = "event_vfi_model",
     out_path: str = "logs/model.onnx",
     B: int = 1,
     H: int = 64,
@@ -91,7 +91,7 @@ def export(
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Export EventVFIModel to ONNX")
-    p.add_argument("--section", default="event_vfi_model_smoke", help="config.json section")
+    p.add_argument("--section", default="event_vfi_model", help="config.json section")
     p.add_argument("--out",     default="logs/model.onnx",        help="output .onnx path")
     p.add_argument("--h",       type=int, default=64,              help="dummy input height")
     p.add_argument("--w",       type=int, default=64,              help="dummy input width")

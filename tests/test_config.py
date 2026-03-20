@@ -26,14 +26,8 @@ class TestLoadConfigReal(unittest.TestCase):
         cfg = load_config("video_processing")
         self.assertIsInstance(cfg, SimpleNamespace)
         for key in ("video_path", "raw_path", "output_path",
-                     "output_fps", "blend_alpha", "grayscale"):
-            self.assertTrue(hasattr(cfg, key), f"Missing key: {key}")
-
-    def test_loads_video_to_frames_section(self):
-        cfg = load_config("video_to_frames")
-        self.assertIsInstance(cfg, SimpleNamespace)
-        for key in ("input_video", "out_dir", "format", "grayscale",
-                     "max_frames", "start_frame"):
+                     "output_fps", "blend_alpha", "grayscale",
+                     "out_dir", "format", "max_frames", "start_frame"):
             self.assertTrue(hasattr(cfg, key), f"Missing key: {key}")
 
     def test_loads_model_section(self):

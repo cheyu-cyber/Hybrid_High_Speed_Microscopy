@@ -92,6 +92,15 @@ def _save_if_tensor(path: Path, value: Any) -> None:
         _save_image_tensor(path, value)
 
 
+def _slice_sample(obj: Any, b: int) -> Any:
+    """Recursively slice a single batch item (index b) from dicts/tensors."""
+    if isinstance(obj, torch.Tensor):
+        return obj[b : b + 1]
+    if isinstance(obj, dict):
+        return {k: _slice_sample(v, b) for k, v in obj.items()}
+    return obj
+
+
 def _save_decoder_outputs(stage_dir: Path, decoder_dict: Dict[str, torch.Tensor]) -> None:
     for key, value in decoder_dict.items():
         if not isinstance(value, torch.Tensor):
@@ -108,23 +117,10 @@ def _save_motion_outputs(stage_dir: Path, motion_dict: Dict[str, torch.Tensor]) 
         _save_if_tensor(file_path, value)
 
 
-def save_cycle_debug_outputs(
-    out_dir: Path,
-    step: int,
-    sample: Dict[str, torch.Tensor],
-    outputs: Dict[str, Any],
-) -> None:
-    """Dump major intermediates for one optimization step.
-
-    Saved content includes:
-    - Inputs: I0, I1, I2, E01, E12, E0515
-    - Stage predictions: pred_05, pred_15, pred_1_cyc
-    - Per-stage decoder outputs and motion outputs
-    """
-    root = out_dir / f"step_{step:07d}"
+def _save_one_sample(root: Path, sample: Dict[str, torch.Tensor], outputs: Dict[str, Any]) -> None:
+    """Save all visualizations for a single batch item (already sliced to B=1)."""
     root.mkdir(parents=True, exist_ok=True)
 
-    # Inputs and supervision target
     for key in ("I0", "I1", "I2"):
         if key in sample:
             _save_image_tensor(root / f"input_{key}.png", sample[key])
@@ -132,7 +128,6 @@ def save_cycle_debug_outputs(
         if key in sample:
             _save_event_voxel(root / f"input_{key}.png", sample[key])
 
-    # Final cycle outputs
     for key in ("pred_05", "pred_15", "pred_1_cyc"):
         if key in outputs and isinstance(outputs[key], torch.Tensor):
             _save_image_tensor(root / f"{key}.png", outputs[key])
@@ -140,7 +135,6 @@ def save_cycle_debug_outputs(
     for stage_key in ("stage_01", "stage_12", "stage_cyc"):
         if stage_key not in outputs:
             continue
-
         stage = outputs[stage_key]
         stage_dir = root / stage_key
         stage_dir.mkdir(parents=True, exist_ok=True)
@@ -148,11 +142,34 @@ def save_cycle_debug_outputs(
         pred = stage.get("pred")
         if isinstance(pred, torch.Tensor):
             _save_image_tensor(stage_dir / "pred.png", pred)
-
         decoder = stage.get("decoder")
         if isinstance(decoder, dict):
             _save_decoder_outputs(stage_dir, decoder)
-
         motion = stage.get("motion")
         if isinstance(motion, dict):
             _save_motion_outputs(stage_dir, motion)
+
+
+def save_cycle_debug_outputs(
+    out_dir: Path,
+    step: int,
+    sample: Dict[str, torch.Tensor],
+    outputs: Dict[str, Any],
+    max_samples: int = 4,
+) -> None:
+    """Dump major intermediates for one optimization step.
+
+    Saved content per sample:
+    - Inputs: I0, I1, I2 (RGB), E01, E12, E0515 (event voxels)
+    - Stage predictions: pred_05, pred_15, pred_1_cyc
+    - Per-stage decoder outputs and motion outputs
+
+    When max_samples > 1, saves each batch item to sample_00/, sample_01/, ...
+    """
+    root = out_dir / f"step_{step:07d}"
+    B = next(iter(sample.values())).shape[0]
+    n = min(B, max_samples)
+
+    for b in range(n):
+        sample_dir = root / f"sample_{b:02d}" if n > 1 else root
+        _save_one_sample(sample_dir, _slice_sample(sample, b), _slice_sample(outputs, b))

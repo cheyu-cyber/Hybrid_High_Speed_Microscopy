@@ -65,6 +65,7 @@ def test_event_vfi_one_batch_smoke() -> None:
     assert warped1.shape == (b, c, h, w)
     _assert_finite_tensor("stage_01.warped0", warped0)
     _assert_finite_tensor("stage_01.warped1", warped1)
+    _assert_finite_tensor("stage_01.blend", out["stage_01"]["decoder"]["blend"])
 
     # Repeated optimization on same batch: loss should trend down.
     losses = []

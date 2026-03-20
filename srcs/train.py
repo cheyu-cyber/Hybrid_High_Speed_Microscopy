@@ -33,7 +33,7 @@ from models.model import EventVFIModel
 from utils.config import load_config
 from utils.data_preparation import AugmentConfig, SpatialConfig
 from utils.debug_visualization import save_cycle_debug_outputs
-from utils.get_train_data import build_centered_window_dataset
+from utils.get_train_data import build_left_aligned_dataset
 from utils.metrics import summarize_reconstruction_metrics
 
 
@@ -109,7 +109,7 @@ def _build_dataset(cfg, split: str, overfit_n: int = 0, seed: int = 42):
         events_path = cfg.val_events_path
         augment     = AugmentConfig()
 
-    ds = build_centered_window_dataset(
+    ds = build_left_aligned_dataset(
         sequence_name=getattr(cfg, "sequence_name", split),
         frame_dir=frame_dir,
         frame_timestamps_csv=frame_csv,

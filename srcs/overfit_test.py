@@ -40,7 +40,7 @@ from models.model import EventVFIModel
 from utils.config import load_config
 from utils.data_preparation import AugmentConfig, SpatialConfig
 from utils.debug_visualization import save_cycle_debug_outputs
-from utils.get_train_data import build_centered_window_dataset
+from utils.get_train_data import build_left_aligned_dataset
 from utils.metrics import summarize_reconstruction_metrics
 
 
@@ -96,7 +96,7 @@ def _build_tiny_dataset(cfg, num_samples: int, log: logging.Logger):
     print("  Building dataset ...")
     log.info("Building dataset from: %s", cfg.train_frame_dir)
     t0 = time.perf_counter()
-    ds = build_centered_window_dataset(
+    ds = build_left_aligned_dataset(
         sequence_name=getattr(cfg, "sequence_name", "overfit"),
         frame_dir=cfg.train_frame_dir,
         frame_timestamps_csv=cfg.train_frame_csv,
@@ -285,14 +285,14 @@ def run_overfit() -> bool:
                 with torch.no_grad():
                     model.eval()
                     vis_out = model(
-                        I0=batch_dev["I0"][:1], I1=batch_dev["I1"][:1], I2=batch_dev["I2"][:1],
-                        E01=batch_dev["E01"][:1], E12=batch_dev["E12"][:1], E0515=batch_dev["E0515"][:1],
+                        I0=batch_dev["I0"], I1=batch_dev["I1"], I2=batch_dev["I2"],
+                        E01=batch_dev["E01"], E12=batch_dev["E12"], E0515=batch_dev["E0515"],
                         return_debug=True,
                     )
                     save_cycle_debug_outputs(
                         out_dir=vis_dir,
                         step=global_step,
-                        sample={k: batch_dev[k][:1] for k in _TENSOR_KEYS if k in batch_dev},
+                        sample={k: batch_dev[k] for k in _TENSOR_KEYS if k in batch_dev},
                         outputs=vis_out,
                     )
                     model.train()

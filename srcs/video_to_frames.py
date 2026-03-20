@@ -19,9 +19,9 @@ from utils.config import load_config
 
 
 def main() -> int:
-    cfg = load_config("video_to_frames")
+    cfg = load_config("video_processing")
 
-    video_path = Path(cfg.input_video)
+    video_path = Path(cfg.video_path)
     if not video_path.is_file():
         print(f"Input not found: {video_path}", file=sys.stderr)
         return 2

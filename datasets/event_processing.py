@@ -22,48 +22,6 @@ import torch
 
 
 # ---------------------------------------------------------------------------
-# 1. Event representation — voxel grid  (torch)
-# ---------------------------------------------------------------------------
-
-def events_to_voxel_grid(events_t, events_x, events_y, events_p,
-                         num_bins: int, height: int, width: int):
-    """Convert a batch of events into a voxel grid tensor.
-
-    Parameters
-    ----------
-    events_t : (N,) tensor of normalised timestamps in [0, 1]
-    events_x : (N,) int tensor of x coordinates
-    events_y : (N,) int tensor of y coordinates
-    events_p : (N,) tensor of polarities (+1 / -1)
-    num_bins : number of temporal bins B
-    height, width : sensor resolution
-
-    Returns
-    -------
-    voxel : (B, H, W) float tensor
-    """
-
-    voxel = torch.zeros(num_bins, height, width, dtype=torch.float32,
-                        device=events_t.device)
-    if events_t.numel() == 0:
-        return voxel
-
-    # Distribute each event across two adjacent bins via linear interpolation
-    t_scaled = events_t * (num_bins - 1)
-    t_low = t_scaled.floor().long().clamp(0, num_bins - 1)
-    t_high = (t_low + 1).clamp(0, num_bins - 1)
-    w_high = t_scaled - t_low.float()
-    w_low = 1.0 - w_high
-
-    idx_y = events_y.long()
-    idx_x = events_x.long()
-
-    voxel.index_put_((t_low, idx_y, idx_x), events_p * w_low, accumulate=True)
-    voxel.index_put_((t_high, idx_y, idx_x), events_p * w_high, accumulate=True)
-    return voxel
-
-
-# ---------------------------------------------------------------------------
 # 3. Event accumulation → image rendering  (numpy)
 # ---------------------------------------------------------------------------
 

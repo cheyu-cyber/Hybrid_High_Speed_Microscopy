@@ -17,7 +17,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from utils.config import load_config
-from datasets.event_processing import events_to_voxel_grid
+from utils.data_preparation import events_to_voxel_grid
 
 
 # ---------------------------------------------------------------------------
