@@ -17,7 +17,7 @@ env/
 
 # Data (large binary files)
 data/
-
+logs/
 # Model checkpoints
 models/checkpoints/
 

@@ -594,11 +594,14 @@ class SelfSupervisedEventVFIDataset(Dataset):
 				sensor_h, sensor_w = self.events.sensor_size
 
 			if apply_time_reverse:
+				# ev_01 was built by reversing events from [t1,t2]; timestamps live in [t1,t2].
+				# ev_12 was built by reversing events from [t0,t1]; timestamps live in [t0,t1].
+				# Pass the matching window so _slice_event_indices actually finds the events.
 				voxels["E01"] = _events_window_to_voxel(
-					ev_01, ts["t0"], ts["t1"], self.num_event_bins, sensor_h, sensor_w
+					ev_01, ts["t1"], ts["t2"], self.num_event_bins, sensor_h, sensor_w
 				)
 				voxels["E12"] = _events_window_to_voxel(
-					ev_12, ts["t1"], ts["t2"], self.num_event_bins, sensor_h, sensor_w
+					ev_12, ts["t0"], ts["t1"], self.num_event_bins, sensor_h, sensor_w
 				)
 				voxels["E0515"] = _events_window_to_voxel(
 					ev_0515, ts["t0.5"], ts["t1.5"], self.num_event_bins, sensor_h, sensor_w
@@ -621,8 +624,13 @@ class SelfSupervisedEventVFIDataset(Dataset):
 			frames[k] = self._normalize_frame(frames[k])
 
 		# Sanity flags for sparse event windows.
-		count_e01 = self._window_event_counts(ts["t0"], ts["t1"])
-		count_e12 = self._window_event_counts(ts["t1"], ts["t2"])
+		# After temporal reversal E01 draws from [t1,t2] and E12 from [t0,t1].
+		if apply_time_reverse:
+			count_e01 = self._window_event_counts(ts["t1"], ts["t2"])
+			count_e12 = self._window_event_counts(ts["t0"], ts["t1"])
+		else:
+			count_e01 = self._window_event_counts(ts["t0"], ts["t1"])
+			count_e12 = self._window_event_counts(ts["t1"], ts["t2"])
 		count_e0515 = self._window_event_counts(ts["t0.5"], ts["t1.5"])
 
 		sample: Dict[str, Any] = {

@@ -9,3 +9,9 @@ requires-python = ">=3.9"
 
 [tool.setuptools.packages.find]
 include = ["utils*", "datasets*", "models*", "srcs*"]
+
+[tool.pytest.ini_options]
+markers = [
+	"smoke: lightweight end-to-end smoke tests",
+	"cpu: tests intended to run on CPU",
+]

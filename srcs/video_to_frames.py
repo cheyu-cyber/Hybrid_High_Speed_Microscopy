@@ -43,6 +43,7 @@ def main() -> int:
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    timestamp_offset_us = float(getattr(cfg, "timestamp_offset_us", 0.0))
 
     print(f"Video: {video_path}")
     print(f"  Resolution: {width}x{height}, FPS: {fps:.2f}, Total frames: {total}")
@@ -85,8 +86,8 @@ def main() -> int:
                 out_path = out_dir / out_name
                 cv2.imwrite(str(out_path), frame)
 
-            timestamp_s = frame_idx / fps if fps > 0 else 0.0
-            csv_w.writerow([frame_idx, f"{timestamp_s:.6f}", out_name])
+            timestamp_s = (frame_idx / fps * 1e6 + timestamp_offset_us) / 1e6 if fps > 0 else 0.0
+            csv_w.writerow([frame_idx, f"{timestamp_s:.9f}", out_name])
             saved += 1
             frame_idx += 1
     finally:

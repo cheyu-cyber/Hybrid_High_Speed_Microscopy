@@ -151,6 +151,9 @@ class RefinementDecoder(nn.Module):
 
         self.body = nn.Sequential(*layers)
         self.to_rgb = nn.Conv2d(hidden_ch, 3, kernel_size=3, stride=1, padding=1)
+        nn.init.zeros_(self.to_rgb.weight)
+        if self.to_rgb.bias is not None:
+            nn.init.zeros_(self.to_rgb.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         feat = self.body(x)
@@ -281,7 +284,7 @@ class WarpingSynthesisDecoder(nn.Module):
         residual = self.refine(refine_in)
         pred = blend + residual
 
-        if self.clamp_output:
+        if self.clamp_output and not self.training:
             pred = pred.clamp(0.0, 1.0)
 
         return {
